@@ -1,15 +1,23 @@
 #!/bin/bash
 
-MOST=`/opt/zimbra/libexec/zmmsgtrace -s "@foo.com" 2> /dev/nul |grep "foo.com \-\->" |sort |uniq -c |sort -g |tail -n1`
+RATE=`/opt/zimbra/libexec/zmmsgtrace -s "@foo.com" 2> /dev/nul |grep "foo.com \-\->" |sort |uniq -c`
+RATE=`echo $RATE |sed -e 's/ --> /,/g'`
 
-COUNT=`echo $MOST |awk '{print $1}'`
-EMAIL=`echo $MOST |awk '{print $2}'`
+OLDIFS=$IFS
+IFS=','
+aRATE=($RATE)
 
-#echo $MOST
-#echo $COUNT
-#echo $EMAIL
+for line in "${aRATE[@]}" ;do
+        COUNT=`echo $line |awk '{print $1}'`
+        EMAIL=`echo $line |awk '{print $2}'`
 
-if [ ${COUNT:-0} -gt 1500 ]; then
-        echo lock account
-        /opt/zimbra/bin/zmprov ma $EMAIL zimbraAccountStatus lock
-fi
+        #echo $line
+        #echo $COUNT
+        #echo $EMAIL
+
+        if [ ${COUNT:-0} -gt 1500 ]; then
+                echo lock account $EMAIL
+                /opt/zimbra/bin/zmprov ma $EMAIL zimbraAccountStatus lock
+        fi
+done
+IFS=$OLDIFS
